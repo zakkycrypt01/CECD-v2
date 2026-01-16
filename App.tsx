@@ -159,57 +159,65 @@ const App: React.FC = () => {
   }
 
   return (
-    <Router>
-      <div className="flex h-screen w-full bg-background-dark overflow-hidden">
-        {/* Desktop Sidebar */}
-        <Sidebar role={currentUser.role} onLogout={handleLogout} />
-        
-        {/* Mobile Sidebar Overlay */}
-        {mobileMenuOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-        )}
-        
-        {/* Mobile Sidebar */}
-        <div className={`fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-slate-900 to-slate-950 border-r border-white/5 z-50 md:hidden transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <Sidebar role={currentUser.role} onLogout={() => { handleLogout(); setMobileMenuOpen(false); }} />
-        </div>
-        
-        <main className="flex-1 flex flex-col min-w-0 relative h-full">
-          <Header user={currentUser} walletProvider={walletProvider} mobileMenuOpen={mobileMenuOpen} onMobileMenuToggle={setMobileMenuOpen} />
+    <ErrorBoundary
+      onError={(error, info) => {
+        loggerService.error('App', 'Unhandled component error', error, {
+          componentStack: info.componentStack
+        });
+      }}
+    >
+      <Router>
+        <div className="flex h-screen w-full bg-background-dark overflow-hidden">
+          {/* Desktop Sidebar */}
+          <Sidebar role={currentUser.role} onLogout={handleLogout} />
           
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <Routes>
-              <Route path="/" element={<Dashboard incidents={incidents} volunteers={volunteers} currentUser={currentUser} />} />
-              <Route path="/incidents" element={<Incidents incidents={incidents} />} />
-              <Route path="/incidents/:id" element={<IncidentDetail incidents={incidents} setIncidents={setIncidents} currentUser={currentUser} volunteers={volunteers} />} />
-              <Route path="/report" element={<ReportIncident onSubmit={addIncident} currentUser={currentUser} isWhisperMode={globalWhisperMode} setIsWhisperMode={setGlobalWhisperMode} />} />
-              <Route path="/volunteers" element={<Volunteers volunteers={volunteers} onUpdateStatus={updateVolunteerStatus} onAddVolunteer={addVolunteer} />} />
-              <Route path="/teams" element={<Teams currentUser={currentUser} />} />
-              <Route path="/analytics" element={<Analytics incidents={incidents} />} />
-              <Route path="/training" element={<Training currentUser={currentUser} />} />
-              <Route path="/alerts" element={<AlertsManager />} />
-              <Route path="/admin" element={<AdminGovernance />} />
-              <Route path="/profile" element={<Profile user={currentUser} />} />
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+          {/* Mobile Sidebar Overlay */}
+          {mobileMenuOpen && (
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+          )}
+          
+          {/* Mobile Sidebar */}
+          <div className={`fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-slate-900 to-slate-950 border-r border-white/5 z-50 md:hidden transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <Sidebar role={currentUser.role} onLogout={() => { handleLogout(); setMobileMenuOpen(false); }} />
           </div>
-        </main>
-        
-        {/* Mobile Responder Quick Panel */}
-        <MobileResponderPanel 
-          currentUser={currentUser}
-          incidents={incidents}
-          onStatusChange={(newStatus) => updateVolunteerStatus(currentUser.id, newStatus)}
-          onNavigateToIncident={(id) => setMobileMenuOpen(false)}
-        />
-        
-        <AiAssistant />
-      </div>
-    </Router>
+          
+          <main className="flex-1 flex flex-col min-w-0 relative h-full">
+            <Header user={currentUser} walletProvider={walletProvider} mobileMenuOpen={mobileMenuOpen} onMobileMenuToggle={setMobileMenuOpen} />
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <Routes>
+                <Route path="/" element={<Dashboard incidents={incidents} volunteers={volunteers} currentUser={currentUser} />} />
+                <Route path="/incidents" element={<Incidents incidents={incidents} />} />
+                <Route path="/incidents/:id" element={<IncidentDetail incidents={incidents} setIncidents={setIncidents} currentUser={currentUser} volunteers={volunteers} />} />
+                <Route path="/report" element={<ReportIncident onSubmit={addIncident} currentUser={currentUser} isWhisperMode={globalWhisperMode} setIsWhisperMode={setGlobalWhisperMode} />} />
+                <Route path="/volunteers" element={<Volunteers volunteers={volunteers} onUpdateStatus={updateVolunteerStatus} onAddVolunteer={addVolunteer} />} />
+                <Route path="/teams" element={<Teams currentUser={currentUser} />} />
+                <Route path="/analytics" element={<Analytics incidents={incidents} />} />
+                <Route path="/training" element={<Training currentUser={currentUser} />} />
+                <Route path="/alerts" element={<AlertsManager />} />
+                <Route path="/admin" element={<AdminGovernance />} />
+                <Route path="/profile" element={<Profile user={currentUser} />} />
+                <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </div>
+          </main>
+          
+          {/* Mobile Responder Quick Panel */}
+          <MobileResponderPanel 
+            currentUser={currentUser}
+            incidents={incidents}
+            onStatusChange={(newStatus) => updateVolunteerStatus(currentUser.id, newStatus)}
+            onNavigateToIncident={(id) => setMobileMenuOpen(false)}
+          />
+          
+          <AiAssistant />
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
 };
 

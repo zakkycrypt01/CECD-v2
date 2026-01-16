@@ -1,6 +1,8 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Role, User } from '../types';
+import { validationService } from '../services/validationService';
+import { loggerService } from '../services/loggerService';
 
 interface VolunteersProps {
   volunteers?: User[];
@@ -96,6 +98,33 @@ const Volunteers: React.FC<VolunteersProps> = ({ volunteers = [], onUpdateStatus
     e.preventDefault();
     if (!onAddVolunteer) return;
 
+    // Validate input
+    const nameValidation = validationService.validateName(newVolunteer.name);
+    const emailValidation = validationService.validateEmail(newVolunteer.email);
+    const locationValidation = validationService.validateDescription(newVolunteer.location);
+
+    if (!nameValidation.isValid || !emailValidation.isValid || !locationValidation.isValid) {
+      const errors = [...nameValidation.errors, ...emailValidation.errors, ...locationValidation.errors];
+      loggerService.warn('Volunteers', 'Form validation failed', { errors });
+      alert(errors.join('\n'));
+      return;
+    }
+
+    // Validate wallet address
+    const walletValidation = validationService.validateWalletAddress(newVolunteer.walletAddress);
+    if (!walletValidation.isValid) {
+      loggerService.warn('Volunteers', 'Invalid wallet address');
+      alert(walletValidation.errors[0]);
+      return;
+    }
+
+    // Validate skills
+    if (newVolunteer.skills.length === 0) {
+      loggerService.warn('Volunteers', 'No skills selected');
+      alert('Please select at least one skill');
+      return;
+    }
+
     const volunteer: User = {
       id: `user-${Date.now()}`,
       name: newVolunteer.name,
@@ -111,6 +140,7 @@ const Volunteers: React.FC<VolunteersProps> = ({ volunteers = [], onUpdateStatus
     };
 
     onAddVolunteer(volunteer);
+    loggerService.info('Volunteers', `New volunteer added: ${volunteer.name}`, { id: volunteer.id });
     setShowOnboardModal(false);
     setNewVolunteer({
       name: '',
