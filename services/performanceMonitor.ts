@@ -173,37 +173,69 @@ class PerformanceMonitor {
    * Get navigation timing
    */
   getNavigationTiming() {
-    if (!window.performance || !window.performance.timing) {
+    if (typeof window === 'undefined' || !window.performance) {
       return null;
     }
 
-    const timing = window.performance.timing;
-    const pageLoadTime = timing.loadEventEnd - timing.navigationStart;
-    const connectTime = timing.responseEnd - timing.requestStart;
-    const renderTime = timing.domComplete - timing.domLoading;
-    const domInteractiveTime = timing.domInteractive - timing.navigationStart;
+    // Use PerformanceNavigationTiming (modern API) if available
+    if (window.performance.getEntriesByType) {
+      const navigationTiming = window.performance.getEntriesByType('navigation')[0];
+      if (navigationTiming) {
+        return {
+          pageLoadTime: navigationTiming.loadEventEnd - navigationTiming.fetchStart,
+          connectTime: navigationTiming.responseEnd - navigationTiming.requestStart,
+          renderTime: navigationTiming.domComplete - navigationTiming.domLoading,
+          domInteractiveTime: navigationTiming.domInteractive - navigationTiming.fetchStart
+        };
+      }
+    }
 
-    return {
-      pageLoadTime,
-      connectTime,
-      renderTime,
-      domInteractiveTime
-    };
+    // Fallback to deprecated timing API
+    try {
+      if ((window.performance as any).timing) {
+        const timing = (window.performance as any).timing;
+        const pageLoadTime = timing.loadEventEnd - timing.navigationStart;
+        const connectTime = timing.responseEnd - timing.requestStart;
+        const renderTime = timing.domComplete - timing.domLoading;
+        const domInteractiveTime = timing.domInteractive - timing.navigationStart;
+
+        return {
+          pageLoadTime,
+          connectTime,
+          renderTime,
+          domInteractiveTime
+        };
+      }
+    } catch (error) {
+      loggerService.warn('PerformanceMonitor', 'Failed to get navigation timing', { error: (error as Error).message });
+    }
+
+    return null;
   }
 
   /**
-   * Get memory usage (if available)
+   * Get memory usage (if available - Chrome only)
    */
   getMemoryUsage() {
-    if (!performance || !performance.memory) {
+    if (typeof window === 'undefined' || !window.performance) {
       return null;
     }
 
-    return {
-      usedJSHeapSize: (performance.memory.usedJSHeapSize / 1048576).toFixed(2) + ' MB',
-      totalJSHeapSize: (performance.memory.totalJSHeapSize / 1048576).toFixed(2) + ' MB',
-      jsHeapSizeLimit: (performance.memory.jsHeapSizeLimit / 1048576).toFixed(2) + ' MB'
-    };
+    try {
+      const perfMemory = (window.performance as any).memory;
+      if (!perfMemory) {
+        return null;
+      }
+
+      return {
+        usedJSHeapSize: (perfMemory.usedJSHeapSize / 1048576).toFixed(2) + ' MB',
+        totalJSHeapSize: (perfMemory.totalJSHeapSize / 1048576).toFixed(2) + ' MB',
+        jsHeapSizeLimit: (perfMemory.jsHeapSizeLimit / 1048576).toFixed(2) + ' MB'
+      };
+    } catch (error) {
+      loggerService.debug('PerformanceMonitor', 'Memory API not available in this browser');
+      return null;
+    }
   }
 
   /**

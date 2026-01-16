@@ -29,7 +29,9 @@ export class StateStore<T> {
    * Update state
    */
   setState(updater: T | ((current: T) => T)): void {
-    const newState = typeof updater === 'function' ? updater(this.state) : updater;
+    const newState = typeof updater === 'function' 
+      ? (updater as (current: T) => T)(this.state) 
+      : updater;
 
     if (newState !== this.state) {
       this.state = newState;
