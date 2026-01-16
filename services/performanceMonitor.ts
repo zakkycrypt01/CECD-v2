@@ -21,6 +21,10 @@ class PerformanceMonitor {
    * Start a performance measurement
    */
   startMeasure(name: string): void {
+    if (typeof window === 'undefined' || !window.performance || !window.performance.now) {
+      loggerService.warn('PerformanceMonitor', 'Performance API not available');
+      return;
+    }
     this.marks.set(name, performance.now());
     if (this.enableLogging) {
       loggerService.debug('PerformanceMonitor', `Measurement started: ${name}`);
@@ -31,6 +35,11 @@ class PerformanceMonitor {
    * End a performance measurement
    */
   endMeasure(name: string, metadata?: Record<string, any>): PerformanceMetric | null {
+    if (typeof window === 'undefined' || !window.performance || !window.performance.now) {
+      loggerService.warn('PerformanceMonitor', 'Performance API not available');
+      return null;
+    }
+
     const startTime = this.marks.get(name);
 
     if (!startTime) {
@@ -138,7 +147,8 @@ class PerformanceMonitor {
     const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
     const min = Math.min(...durations);
     const max = Math.max(...durations);
-    const median = durations.sort((a, b) => a - b)[Math.floor(durations.length / 2)];
+    const sortedDurations = [...durations].sort((a, b) => a - b);
+    const median = sortedDurations[Math.floor(sortedDurations.length / 2)];
 
     return {
       count: metrics.length,
@@ -179,7 +189,7 @@ class PerformanceMonitor {
 
     // Use PerformanceNavigationTiming (modern API) if available
     if (window.performance.getEntriesByType) {
-      const navigationTiming = window.performance.getEntriesByType('navigation')[0];
+      const navigationTiming = window.performance.getEntriesByType('navigation')[0] as any;
       if (navigationTiming) {
         return {
           pageLoadTime: navigationTiming.loadEventEnd - navigationTiming.fetchStart,
